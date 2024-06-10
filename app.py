@@ -57,7 +57,7 @@ def get_pie_data():
     return jsonify(storage.get_genres_count(storage.selected_date))
 
 
-@app.route('/get-bar-data')
+@app.route('/get-popularity-data')
 def get_bar_data():
     song_rank = int(request.args.get('song'))
     return storage.get_popularity_over_time(storage.selected_date, song_rank)

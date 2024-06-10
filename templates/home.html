@@ -19,7 +19,6 @@
             width: 100%;
             display: flex;
             flex-direction: column;
-            /*background-image: url("https://img.freepik.com/free-photo/abstract-optical-laser-horizontal-background_23-2149116254.jpg?w=1380&t=st=1716646695~exp=1716647295~hmac=0b8338d38f4c67e65848e105af642307a211c61ab6e483a3d2271809817f65b4");*/
             background-image: url("https://wallpaperaccess.com/full/7183034.jpg");
             background-repeat: no-repeat;
             background-size: cover;
@@ -83,8 +82,8 @@
 
         /* Hide scrollbar for IE, Edge and Firefox */
         .box3 {
-            -ms-overflow-style: none; /* IE and Edge */
-            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none;
+            scrollbar-width: none;
         }
 
         .ranking {
@@ -154,15 +153,15 @@
         /* TOOLTIP */
         .tooltip {
             position: absolute;
-            background-color: rgba(0, 0, 0, 0.7); /* Black background with 30% opacity */
-            color: #fff; /* White text color */
+            background-color: rgba(0, 0, 0, 0.7);
+            color: #fff;
             padding: 8px;
-            border-radius: 8px; /* Rounded corners */
-            pointer-events: none; /* Disable pointer events */
-            font-family: Arial, sans-serif; /* Font family */
-            font-size: 14px; /* Font size */
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5); /* Optional: add a subtle shadow */
-            transition: opacity 0.5s; /* Smooth transition for opacity */
+            border-radius: 8px;
+            pointer-events: none;
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+            transition: opacity 0.5s;
         }
 
         #overlay {
@@ -288,12 +287,12 @@
         </thead>
         <tbody>
         {% for song in songs %}
-        <tr>
-            <td>{{ loop.index0 + 1 }}</td>
-            <td>{{ song.title }}</td>
-            <td>{{ song.artist }}</td>
-            <td>{{ song.genres | join(', ') }}</td>
-        </tr>
+            <tr>
+                <td>{{ loop.index0 + 1 }}</td>
+                <td>{{ song.title }}</td>
+                <td>{{ song.artist }}</td>
+                <td>{{ song.genres | join(', ') }}</td>
+            </tr>
         {% endfor %}
         </tbody>
     </table>
@@ -320,7 +319,8 @@ let N_BALLS = 0;
 let ATTRACTION_FORCE = 0.05;
 
 const circles = [];
-let songs = [];
+let r_min = 10
+let r_step = 10
 
 const canvas = document.getElementById('canvas');
 const context = canvas.getContext('2d');
@@ -555,115 +555,25 @@ canvas.addEventListener('mouseout', () => {
     }
 });
 
-// LOAD BUBBLES
-fetch(`/get-songs?canvas_x=${canvas.width}&canvas_y=${canvas.height}`)
-    .then(response => response.json())
-    .then(data => {
-        console.log(data)
-        songs = data['songs'];
-        N_BALLS = songs.length
-        ATTRACTION_FORCE = ATTRACTION_FORCE / (N_BALLS ** 2)
+function load_bubble_chart() {
 
-        let r_min = data['r_min'];
-        let r_step = data['r_step']
+    N_BALLS = songs.length
+    ATTRACTION_FORCE = ATTRACTION_FORCE / (N_BALLS ** 2)
 
-        for (let i = 0; i < songs.length; i++) {
-            if (i === 0) change_selected_song(songs[i])
-
-            const img = new Image();
-            img.src = songs[i].cover_url;
-            img.onload = () => {
-                const pos_x = Math.random() * canvas.width;
-                const pos_y = Math.random() * canvas.height;
-                const radius = r_min + r_step * (N_BALLS - i - 1)
-                const title = songs[i].title;
-                const artist = songs[i].artist;
-                circles.push(new Circle(pos_x, pos_y, radius, img, title, artist, songs[i]));
-            };
-        }
-        animate();
-        draw_pie_chart()
-    })
-    .catch(error => console.error('Error fetching the array:', error))
-
-</script>
-
-<script> <!-- MENU -->
-
-function changeParams() {
-    if (selectedDate == null) {
-        document.getElementById('warning-date').innerHTML = 'You must choose a date!';
-        return;
+    for (let i = 0; i < songs.length; i++) {
+        const img = new Image();
+        img.src = songs[i].cover_url;
+        img.onload = () => {
+            const pos_x = Math.random() * canvas.width;
+            const pos_y = Math.random() * canvas.height;
+            const radius = r_min + r_step * (N_BALLS - i - 1)
+            const title = songs[i].title;
+            const artist = songs[i].artist;
+            circles.push(new Circle(pos_x, pos_y, radius, img, title, artist, songs[i]));
+        };
     }
-
-    const top_n = document.getElementById('n_songs').value;
-    if (top_n === '') {
-        document.getElementById('warning-top-n').innerHTML = 'You must choose number of songs!';
-        return;
-    }
-
-    showOverlay();
-    window.location.replace("http://127.0.0.1:5000/?date=" + selectedDate + "&top_n=" + top_n)
+    animate();
 }
-
-function showOverlay() {
-    document.getElementById("overlay").style.display = "block";
-}
-
-function hideOverlay() {
-    document.getElementById("overlay").style.display = "none";
-}
-
-function showMenu() {
-    const menu = document.getElementById('menu');
-    menu.classList.add('active');
-}
-
-function hideMenu() {
-    const menu = document.getElementById('menu');
-    menu.classList.remove('active');
-}
-
-let selectedDate = null;
-
-$(document).ready(function () {
-    function getDateFromUrl() {
-        const urlParams = new URLSearchParams(window.location.search);
-        return urlParams.get('date');
-    }
-
-    function formatDate(dateStr) {
-        const year = dateStr.slice(0, 4);
-        const month = dateStr.slice(4, 6);
-        const day = dateStr.slice(6, 8);
-        return new Date(year, month - 1, day);
-    }
-
-    const currentDate = new Date();
-    currentDate.setDate(currentDate.getDate() - 1);
-    let chosenDate = currentDate;
-    let dateStr = getDateFromUrl()
-    if (dateStr !== null) {
-        chosenDate = formatDate(dateStr);
-    }
-
-    $('#inline-datepicker').datepicker({
-        format: 'yyyymmdd',
-        inline: true
-    }).on('changeDate', function (e) {
-        chosenDate = e.date;
-        if (chosenDate > currentDate) {
-            $('#inline-datepicker').datepicker('update', currentDate);
-            document.getElementById('warning-date').innerHTML = 'You must choose a past date!';
-        } else {
-            selectedDate = e.format()
-        }
-    });
-
-    if (chosenDate) {
-        $('#inline-datepicker').datepicker('setDate', chosenDate);
-    }
-});
 </script>
 
 <script> <!-- PIE CHART -->
@@ -686,15 +596,6 @@ function draw_pie_chart() {
     let config = {
         responsive: true
     }
-
-    // let customColors = [
-    //     '#436850',
-    //     '#77B0AA',
-    //     '#135D66',
-    //     '#12372A',
-    //     '#304D30',
-    //     '#163020',
-    // ]
 
     const customColors = [
         '#377eb8',
@@ -755,7 +656,7 @@ function draw_line_chart(song) {
     }
 
     showOverlayBox2();
-    fetch(`/get-bar-data?song=${songs.findIndex((song) => song === selectedSong)}`)
+    fetch(`/get-popularity-data?song=${songs.findIndex((song) => song === selectedSong)}`)
         .then(response => response.json())
         .then(data => {
             console.log(data)
@@ -808,7 +709,8 @@ function draw_line_chart(song) {
 
 function change_selected_song(song) {
     selectedSong = song;
-    draw_line_chart(selectedSong)
+    console.log(selectedSong);
+    draw_line_chart(selectedSong);
 }
 
 canvas.addEventListener('mousedown', (event) => {
@@ -823,6 +725,125 @@ canvas.addEventListener('mousedown', (event) => {
         }
     }
 });
+</script>
+<script> <!-- MENU -->
+function changeParams() {
+    if (selectedDate == null) {
+        document.getElementById('warning-date').innerHTML = 'You must choose a date!';
+        return;
+    }
+
+    const top_n = document.getElementById('n_songs').value;
+    if (top_n === '') {
+        document.getElementById('warning-top-n').innerHTML = 'You must choose number of songs!';
+        return;
+    }
+    if (parseInt(top_n) > 50) {
+        document.getElementById('warning-top-n').innerHTML = 'You must choose number of songs less or equal to 50!';
+        return;
+    }
+    if (parseInt(top_n) < 10) {
+        document.getElementById('warning-top-n').innerHTML = 'You must choose number of songs more or equal to 10!';
+        return;
+    }
+
+    showOverlay();
+    window.location.replace("http://127.0.0.1:5000/?date=" + selectedDate + "&top_n=" + top_n)
+}
+
+function showOverlay() {
+    document.getElementById("overlay").style.display = "block";
+}
+
+function hideOverlay() {
+    document.getElementById("overlay").style.display = "none";
+}
+
+function showMenu() {
+    const menu = document.getElementById('menu');
+    menu.classList.add('active');
+}
+
+function hideMenu() {
+    const menu = document.getElementById('menu');
+    menu.classList.remove('active');
+}
+
+let selectedDate = null;
+
+</script>
+
+<script> <!-- LOAD DATA -->
+let songs = [];
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+$(document).ready(
+    function () {
+        function getTopNFromUrl() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('top_n');
+        }
+
+        let chosenTopN = getTopNFromUrl();
+        if (chosenTopN === null) {
+            chosenTopN = 15
+        }
+        document.getElementById('n_songs').value = chosenTopN;
+
+
+        function getDateFromUrl() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('date');
+        }
+
+        function formatDate(dateStr) {
+            const year = dateStr.slice(0, 4);
+            const month = dateStr.slice(4, 6);
+            const day = dateStr.slice(6, 8);
+            return new Date(year, month - 1, day);
+        }
+
+        const currentDate = new Date();
+        currentDate.setDate(currentDate.getDate() - 1);
+        let chosenDate = currentDate;
+        let dateStr = getDateFromUrl()
+        if (dateStr !== null) {
+            chosenDate = formatDate(dateStr);
+        }
+
+        $('#inline-datepicker').datepicker({
+            format: 'yyyymmdd',
+            inline: true
+        }).on('changeDate', function (e) {
+            chosenDate = e.date;
+            if (chosenDate > currentDate) {
+                $('#inline-datepicker').datepicker('update', currentDate);
+                document.getElementById('warning-date').innerHTML = 'You must choose a past date!';
+            } else {
+                selectedDate = e.format()
+            }
+        });
+
+        if (chosenDate) {
+            $('#inline-datepicker').datepicker('setDate', chosenDate);
+        }
+
+        // Load everything
+        fetch(`/get-songs?canvas_x=${canvas.width}&canvas_y=${canvas.height}`)
+            .then(response => response.json())
+            .then(data => {
+                console.log(data)
+                songs = data['songs'];
+                r_min = data['r_min'];
+                r_step = data['r_step']
+
+                load_bubble_chart();
+                change_selected_song(songs[0])
+                draw_pie_chart();
+            }).catch(error => console.error('Error fetching the array:', error))
+    }
+)
 </script>
 </body>
 </html>
