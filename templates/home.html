@@ -263,7 +263,7 @@
         <path d="M3 6h18"></path>
         <path d="M3 18h18"></path>
     </svg>
-    <h3 style="margin-left: 40vw; margin-top: 0.5vh; color: white;">Top daily songs in europe</h3>
+    <h3 id="header" style="margin-left: 35vw; margin-top: 0.5vh; color: white;"></h3>
 </div>
 <div class="box box1">
     <canvas id="canvas"></canvas>
@@ -314,7 +314,7 @@
 const REPULSION_FORCE = 0.2;
 const REPULSION_DISTANCE = 20;
 const DAMPING = 0.7;
-const CENTER_FORCE = 0.0001;
+const CENTER_FORCE = 0.001;
 let N_BALLS = 0;
 let ATTRACTION_FORCE = 0.05;
 
@@ -576,7 +576,7 @@ function load_bubble_chart() {
 }
 </script>
 
-<script> <!-- PIE CHART -->
+<script> <!-- GENRES CHART -->
 function draw_pie_chart() {
     let layout = {
         title: 'Genres percentage share',
@@ -615,7 +615,7 @@ function draw_pie_chart() {
         '#0471A6'
     ]
 
-    fetch('/get-pie-data')
+    fetch('/get-genres-data')
         .then(response => response.json())
         .then(data => {
             console.log(data)
@@ -727,6 +727,8 @@ canvas.addEventListener('mousedown', (event) => {
 });
 </script>
 <script> <!-- MENU -->
+let selectedDate = null;
+
 function changeParams() {
     if (selectedDate == null) {
         document.getElementById('warning-date').innerHTML = 'You must choose a date!';
@@ -769,80 +771,87 @@ function hideMenu() {
     menu.classList.remove('active');
 }
 
-let selectedDate = null;
+function getDataFromUrl() {
+    function getTopNFromUrl() {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get('top_n');
+    }
 
+    let chosenTopN = getTopNFromUrl();
+    if (chosenTopN === null) {
+        chosenTopN = 15
+    }
+    document.getElementById('n_songs').value = chosenTopN;
+
+
+    function getDateFromUrl() {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get('date');
+    }
+
+    function getDateFromDateStr(dateStr) {
+        const year = dateStr.slice(0, 4);
+        const month = dateStr.slice(4, 6);
+        const day = dateStr.slice(6, 8);
+        return new Date(year, month - 1, day);
+    }
+
+    function formatDate(date) {
+        const year = date.getFullYear();
+        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+        const day = date.getDate().toString().padStart(2, '0');
+        return year + month + day;
+    }
+
+    const currentDate = new Date();
+    currentDate.setDate(currentDate.getDate() - 1);
+    let chosenDate = currentDate;
+    let dateStr = getDateFromUrl()
+    if (dateStr !== null) {
+        chosenDate = getDateFromDateStr(dateStr);
+    }
+
+
+    $('#inline-datepicker').datepicker({
+        format: 'yyyymmdd',
+        inline: true
+    }).on('changeDate', function (e) {
+        chosenDate = e.date;
+        if (chosenDate > currentDate) {
+            $('#inline-datepicker').datepicker('update', currentDate);
+            selectedDate = formatDate(currentDate);
+            document.getElementById('warning-date').innerHTML = 'You must choose a past date!';
+        } else {
+            selectedDate = e.format();
+        }
+    });
+
+
+    if (chosenDate) {
+        document.getElementById('header').innerText = 'Top daily songs in europe - ' + chosenDate.getFullYear() + '/' + chosenDate.getMonth() + '/' + chosenDate.getDate();
+        $('#inline-datepicker').datepicker('setDate', chosenDate);
+    }
+
+}
 </script>
 
 <script> <!-- LOAD DATA -->
 let songs = [];
 
-const sleep = ms => new Promise(r => setTimeout(r, ms));
-
 $(document).ready(
-    function () {
-        function getTopNFromUrl() {
-            const urlParams = new URLSearchParams(window.location.search);
-            return urlParams.get('top_n');
-        }
+    fetch(`/get-songs?canvas_x=${canvas.width}&canvas_y=${canvas.height}`)
+        .then(response => response.json())
+        .then(data => {
+            console.log(data)
+            songs = data['songs'];
+            r_min = data['r_min'];
+            r_step = data['r_step']
 
-        let chosenTopN = getTopNFromUrl();
-        if (chosenTopN === null) {
-            chosenTopN = 15
-        }
-        document.getElementById('n_songs').value = chosenTopN;
-
-
-        function getDateFromUrl() {
-            const urlParams = new URLSearchParams(window.location.search);
-            return urlParams.get('date');
-        }
-
-        function formatDate(dateStr) {
-            const year = dateStr.slice(0, 4);
-            const month = dateStr.slice(4, 6);
-            const day = dateStr.slice(6, 8);
-            return new Date(year, month - 1, day);
-        }
-
-        const currentDate = new Date();
-        currentDate.setDate(currentDate.getDate() - 1);
-        let chosenDate = currentDate;
-        let dateStr = getDateFromUrl()
-        if (dateStr !== null) {
-            chosenDate = formatDate(dateStr);
-        }
-
-        $('#inline-datepicker').datepicker({
-            format: 'yyyymmdd',
-            inline: true
-        }).on('changeDate', function (e) {
-            chosenDate = e.date;
-            if (chosenDate > currentDate) {
-                $('#inline-datepicker').datepicker('update', currentDate);
-                document.getElementById('warning-date').innerHTML = 'You must choose a past date!';
-            } else {
-                selectedDate = e.format()
-            }
-        });
-
-        if (chosenDate) {
-            $('#inline-datepicker').datepicker('setDate', chosenDate);
-        }
-
-        // Load everything
-        fetch(`/get-songs?canvas_x=${canvas.width}&canvas_y=${canvas.height}`)
-            .then(response => response.json())
-            .then(data => {
-                console.log(data)
-                songs = data['songs'];
-                r_min = data['r_min'];
-                r_step = data['r_step']
-
-                load_bubble_chart();
-                change_selected_song(songs[0])
-                draw_pie_chart();
-            }).catch(error => console.error('Error fetching the array:', error))
-    }
+            getDataFromUrl();
+            load_bubble_chart();
+            change_selected_song(songs[0])
+            draw_pie_chart();
+        }).catch(error => console.error('Error fetching the array:', error))
 )
 </script>
 </body>

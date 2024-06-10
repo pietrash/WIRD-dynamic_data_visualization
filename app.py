@@ -52,7 +52,7 @@ def get_array():
     })
 
 
-@app.route('/get-pie-data')
+@app.route('/get-genres-data')
 def get_pie_data():
     return jsonify(storage.get_genres_count(storage.selected_date))
 
