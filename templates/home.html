@@ -10,7 +10,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css"
           rel="stylesheet">
 
-    <title>Yee</title>
+    <title>Top songs in europe</title>
     <style>
         body, html {
             margin: 0;
@@ -239,7 +239,7 @@
         <div id="warning-date" style="color: red"></div>
     </div>
     <div>
-        <h5>Top n songs</h5>
+        <h5>Number of songs</h5>
         <label>
             <input id="n_songs" type="number"/>
         </label>
@@ -351,6 +351,14 @@ class Circle {
 
         if (this.image.complete) {
             context.drawImage(this.image, this.x - this.radius, this.y - this.radius, this.radius * 2, this.radius * 2);
+
+            // Darken the circle if not selected
+            if (!(selectedSong === this.song)) {
+                context.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                context.beginPath();
+                context.arc(this.x, this.y, this.radius * 1.1, 0, Math.PI * 2);
+                context.fill();
+            }
         }
         context.restore();
     }
@@ -584,7 +592,6 @@ function draw_pie_chart() {
         font: {
             color: '#FFFFFF'
         },
-
         margin: {
             'b': 40,
             'l': 40,
@@ -602,13 +609,12 @@ function draw_pie_chart() {
         '#41658A',
         '#4FB477',
         '#1C3A13',
-        '#001242',
+        '#1D9A13',
         '#0094C6',
         '#8963BA',
         '#a6cee3',
         '#1f78b4',
         '#b2df8a',
-        '#33a02c',
         '#EAE6E5',
         '#98C1D9',
         '#AFE3C0',
@@ -828,7 +834,7 @@ function getDataFromUrl() {
 
 
     if (chosenDate) {
-        document.getElementById('header').innerText = 'Top daily songs in europe - ' + chosenDate.getFullYear() + '/' + chosenDate.getMonth() + '/' + chosenDate.getDate();
+        document.getElementById('header').innerText = 'Top songs in europe - ' + chosenDate.getFullYear() + '/' + (chosenDate.getMonth() + 1) + '/' + chosenDate.getDate();
         $('#inline-datepicker').datepicker('setDate', chosenDate);
     }
 
@@ -838,21 +844,21 @@ function getDataFromUrl() {
 <script> <!-- LOAD DATA -->
 let songs = [];
 
-$(document).ready(
-    fetch(`/get-songs?canvas_x=${canvas.width}&canvas_y=${canvas.height}`)
-        .then(response => response.json())
-        .then(data => {
-            console.log(data)
-            songs = data['songs'];
-            r_min = data['r_min'];
-            r_step = data['r_step']
+showOverlay();
+fetch(`/get-songs?canvas_x=${canvas.width}&canvas_y=${canvas.height}`)
+    .then(response => response.json())
+    .then(data => {
+        console.log(data)
+        songs = data['songs'];
+        r_min = data['r_min'];
+        r_step = data['r_step']
 
-            getDataFromUrl();
-            load_bubble_chart();
-            change_selected_song(songs[0])
-            draw_pie_chart();
-        }).catch(error => console.error('Error fetching the array:', error))
-)
+        hideOverlay();
+        getDataFromUrl();
+        load_bubble_chart();
+        change_selected_song(songs[0])
+        draw_pie_chart();
+    }).catch(error => console.error('Error fetching the array:', error));
 </script>
 </body>
 </html>

@@ -160,32 +160,25 @@ class Storage:
 
         date_list = pd.date_range(start=start_date, end=end_date).tolist()
 
-        # Get the song
+        # Get the target song
         target_song = self.get_n_songs_for_date(date, self.top_n)[song_rank]
 
         # Prepare data
         result = {}
         for date in date_list:
             songs = self.get_n_songs_for_date(date.strftime("%Y%m%d"), MAX_SONGS)
+
+            result.update({date.strftime('%Y-%m-%d'): 0})
             for i in range(len(songs)):
-                if songs[i]['title'] == target_song['title']:
+                if songs[i]['title'] == target_song['title'] and songs[i]['artist'] == target_song['artist']:
                     result.update({date.strftime('%Y-%m-%d'): MAX_SONGS - i})
                     break
-                else:
-                    result.update({date.strftime('%Y-%m-%d'): 0})
-
-        values = list(result.values())
-        labels = list(result.keys())
-
-        max_ranking = MAX_SONGS
-        tickvals = [max_ranking - i for i in range(max_ranking)]
-        ticktext = [i + 1 for i in range(max_ranking)]
 
         result = {
-            'values': values,
-            'labels': labels,
-            'tickvals': tickvals,
-            'ticktext': ticktext
+            'values': list(result.values()),
+            'labels': list(result.keys()),
+            'tickvals': [MAX_SONGS - i for i in range(MAX_SONGS)],
+            'ticktext': [i + 1 for i in range(MAX_SONGS)]
         }
 
         return result
